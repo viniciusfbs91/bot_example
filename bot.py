@@ -32,7 +32,7 @@ def main():
     # Contadores
     processed_items = 0
     failed_items = 0
-    print('Printando para Testar o logging')
+    
     try:
         # Simula processamento de itens
         for i in range(total_items):
