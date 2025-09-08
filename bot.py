@@ -86,6 +86,34 @@ def main():
             "tempo_medio_item": delay_seconds
         })
         
+        
+        import os
+        from botcity.web import WebBot, Browser
+
+
+        # Instancia o WebBot
+        bot = WebBot()
+
+
+        # Configure se deseja ou não executar no modo headless.
+        bot.headless = False
+
+        # Defina o caminho do WebDriver
+        # bot.driver_path = "<path to your WebDriver binary>"
+        bot.start_browser()
+        bot.sleep(5000)
+
+        # Concluir e limpar o navegador da Web.
+        bot.stop_browser()
+
+
+        bot.browser = Browser.FIREFOX
+
+        bot.start_browser()
+        bot.sleep(5000)
+        bot.stop_browser()
+
+        
         # Determina status final e finaliza tarefa
         if failed_items == 0:
             status = AutomationStatus.SUCCESS
@@ -101,7 +129,7 @@ def main():
         client_worker.log_info(f"Status: {status.value}")
         client_worker.log_info(f"Processados: {processed_items}")
         client_worker.log_info(f"Falharam: {failed_items}")
-        raise Exception("Teste de erro final")  # Teste de erro final
+
         # Finaliza a tarefa - TODOS OS PARÂMETROS SÃO OBRIGATÓRIOS
         client_worker.finish_task(
             status=status,
