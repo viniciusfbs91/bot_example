@@ -87,9 +87,7 @@ def main():
         })
         
         
-        import os
         from botcity.web import WebBot, Browser
-
 
         # Instancia o WebBot
         bot = WebBot()
@@ -105,13 +103,23 @@ def main():
 
         # Concluir e limpar o navegador da Web.
         bot.stop_browser()
+        
+        # Instancia o WebBot
+        bot_2 = WebBot()
 
 
-        bot.browser = Browser.FIREFOX
+        # Configure se deseja ou não executar no modo headless.
+        bot_2.headless = False
 
-        bot.start_browser()
-        bot.sleep(5000)
-        bot.stop_browser()
+        bot_2.browser = Browser.FIREFOX
+
+        # Defina o caminho do WebDriver
+        # bot_2.driver_path = "<path to your WebDriver binary>"
+        bot_2.start_browser()
+        bot_2.sleep(5000)
+
+        # Concluir e limpar o navegador da Web.
+        bot_2.stop_browser()
         
 
         
