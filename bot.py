@@ -112,6 +112,7 @@ def main():
         bot.start_browser()
         bot.sleep(5000)
         bot.stop_browser()
+        
 
         
         # Determina status final e finaliza tarefa
