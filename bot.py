@@ -101,7 +101,7 @@ def main():
         client_worker.log_info(f"Status: {status.value}")
         client_worker.log_info(f"Processados: {processed_items}")
         client_worker.log_info(f"Falharam: {failed_items}")
-        
+        raise Exception("Teste de erro final")  # Teste de erro final
         # Finaliza a tarefa - TODOS OS PARÂMETROS SÃO OBRIGATÓRIOS
         client_worker.finish_task(
             status=status,
