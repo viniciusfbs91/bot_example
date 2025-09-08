@@ -17,7 +17,7 @@ from worker import Worker, AutomationStatus
 def main():
     """Método principal da automação."""
     client_worker = Worker()
-    
+    print('Iniciando Automação')
     task = client_worker.get_task_info()
     
     client_worker.log_info("=== INICIANDO AUTOMAÇÃO DE EXEMPLO ===")
@@ -32,7 +32,7 @@ def main():
     # Contadores
     processed_items = 0
     failed_items = 0
-    
+    print('Valores inicializados')
     try:
         # Simula processamento de itens
         for i in range(total_items):
@@ -86,12 +86,12 @@ def main():
             "tempo_medio_item": delay_seconds
         })
         
-        
+        print('Loop Finalizado')
         from botcity.web import WebBot, Browser
 
         # Instancia o WebBot
         bot = WebBot()
-
+        print('Bot Chrome Iniciado')
 
         # Configure se deseja ou não executar no modo headless.
         bot.headless = False
@@ -103,6 +103,7 @@ def main():
 
         # Concluir e limpar o navegador da Web.
         bot.stop_browser()
+        print('Bot Chrome Finalizado')
         
         # Instancia o WebBot
         bot_2 = WebBot()
@@ -116,10 +117,12 @@ def main():
         # Defina o caminho do WebDriver
         # bot_2.driver_path = "<path to your WebDriver binary>"
         bot_2.start_browser()
+        print('Bot Firefox Iniciado')
         bot_2.sleep(5000)
 
         # Concluir e limpar o navegador da Web.
         bot_2.stop_browser()
+        print('Bot Firefox Finalizado')
         
 
         
