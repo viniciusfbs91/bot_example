@@ -112,26 +112,25 @@ def main():
         )
         
     except Exception as e:
-        message = f"Finalizado com Erro: {str(e)}"
         # Erro não tratado na automação
-        status = AutomationStatus.ERROR
         client_worker.error(e, "Erro crítico na automação")
         
-    finally:
+        # Finaliza com erro se não foi finalizada ainda
+        if not client_worker._task_finished:
+            client_worker.finish_task(
+                status=AutomationStatus.ERROR,
+                message=f"Erro crítico: {str(e)}",
+                total_items=total_items,
+                processed_items=processed_items,
+                failed_items=failed_items
+            )
         
-        # Sempre colocar o cleanup no finally para garantir execução e dentro de um bloco try/except, nesse bloco do código não pode ocorrer erros
+    finally:
+        # Sempre colocar o cleanup no finally para garantir execução
         try:
             cleanup(client_worker)
         except Exception as e:
             client_worker.error(e, "Erro ao executar cleanup")
-
-        client_worker.finish_task(
-            status=status,
-            message=message,
-            total_items=total_items,
-            processed_items=processed_items,
-            failed_items=failed_items
-        )
         
 
 def cleanup(client_worker):

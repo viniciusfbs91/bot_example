@@ -112,7 +112,7 @@ class Worker:
         """
         
         # URLs dos webhooks N8N
-        self.n8n_webhook_base = n8n_webhook_url or os.getenv('N8N_WEBHOOK_URL', 'http://n8n:5678/webhook')
+        self.n8n_webhook_base = n8n_webhook_url or os.getenv('N8N_WEBHOOK_URL')
         
         # Worker ID
         self.worker_id = worker_id or os.getenv('WORKER_ID')
@@ -153,38 +153,8 @@ class Worker:
         self._task_started = False
         self._task_finished = False
         
-        # Inicia a tarefa automaticamente apenas se tiver task_id
-        if self.task_id is not None:
-            self._start_task()
-    
-    def _start_task(self):
-        """Inicia a tarefa e atualiza o status no N8N."""
-        try:
-            if self._task_started:
-                return
-            
-            data = {
-                "task_id": self.task_id,
-                "status": "running",
-                "started_at": datetime.utcnow().isoformat(),
-                "worker_id": self.worker_id,
-                "bot_version": self.bot_version
-            }
-            
-            response = requests.patch(
-                f"{self.n8n_webhook_base}/tarefa/status",
-                json=data,
-                timeout=self.api_timeout
-            )
-            
-            if response.status_code in [200, 201]:
-                self._task_started = True
-                self.log_info("Tarefa iniciada com sucesso")
-            else:
-                self.log_error(f"Erro ao iniciar tarefa: {response.status_code}")
-                
-        except Exception as e:
-            self.log_error(f"Erro ao iniciar tarefa: {e}")
+        # NÃO inicia a tarefa automaticamente - isso é responsabilidade do task_processor
+        # O status 'running' é gerenciado pelo worker principal
     
     def log_info(self, message: str, source: str = "stdout"):
         """Registra um log de informação."""
@@ -237,7 +207,7 @@ class Worker:
             }
             
             requests.post(
-                f"{self.n8n_webhook_base}/tarefa/logs",
+                f"{self.n8n_webhook_base}/webhook/tarefa/logs",
                 json=log_data,
                 timeout=self.api_timeout
             )
@@ -265,7 +235,7 @@ class Worker:
             }
             
             response = requests.post(
-                f"{self.n8n_webhook_base}/tarefa/kpi",
+                f"{self.n8n_webhook_base}/webhook/tarefa/kpi",
                 json=kpi_data,
                 timeout=self.api_timeout
             )
@@ -294,7 +264,10 @@ class Worker:
         """
         try:
             if self._task_finished:
+                self.log_warning("finish_task() já foi chamado anteriormente")
                 return
+            
+            self.log_info(f"Finalizando tarefa {self.task_id} com status: {status.value}")
             
             # Validação dos parâmetros obrigatórios
             if not isinstance(status, AutomationStatus):
@@ -322,8 +295,9 @@ class Worker:
             else:
                 update_data["result_message"] = message
             
+            # 1. Tenta enviar para N8N primeiro
             response = requests.patch(
-                f"{self.n8n_webhook_base}/tarefa/status",
+                f"{self.n8n_webhook_base}/webhook/tarefa/status",
                 json=update_data,
                 timeout=self.api_timeout
             )
@@ -332,11 +306,17 @@ class Worker:
                 self._task_finished = True
                 self.log_info(f"Tarefa finalizada com status: {status.value}")
                 self.log_info(f"Resultados: {processed_items} sucesso, {failed_items} falhas de {total_items} total")
+                self.log_info("finish_task() executado com sucesso!")
             else:
-                self.log_error(f"Erro ao finalizar tarefa: {response.status_code}")
+                self.log_error(f"Erro ao finalizar tarefa via webhook: {response.status_code}")
+                self.log_error(f"Response: {response.text}")
+                # Mesmo se webhook falhar, marca como finalizada
+                self._task_finished = True
                 
         except Exception as e:
             self.log_error(f"Erro ao finalizar tarefa: {e}")
+            # Marca como finalizada mesmo com erro para evitar loop
+            self._task_finished = True
             raise  # Re-raise para forçar o desenvolvedor a corrigir
     
     def get_parameter(self, key: str, default=None):
