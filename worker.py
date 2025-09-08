@@ -281,6 +281,7 @@ class Worker:
             
             update_data = {
                 "task_id": self.task_id,
+                "worker_id": self.worker_id,
                 "status": status.value,
                 "finished_at": datetime.utcnow().isoformat(),
                 "bot_version": self.bot_version,
