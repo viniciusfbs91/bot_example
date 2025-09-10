@@ -7,8 +7,28 @@ Esta classe fornece comunicação direta com N8N via webhooks para:
 - Salvamento de KPIs
 - Tratamento de erros padronizado
 
+AUTENTICAÇÃO OBRIGATÓRIA:
+A partir de agora, todas as comunicações com N8N requerem Basic Auth:
+- Usuário padrão: 'worker'
+- Senha padrão: 'ku84T4a7p'
+
 Exemplo de uso:
     from worker import Worker, AutomationStatus
+    
+    # Modo 1: Usar credenciais padrão (automático)
+    worker = Worker()
+    
+    # Modo 2: Fornecer credenciais explicitamente
+    worker = Worker(
+        n8n_webhook_url="http://localhost:5678",
+        api_user="worker",
+        api_password="ku84T4a7p"
+    )
+    
+    # Modo 3: Usar variáveis de ambiente
+    # export API_USER=worker
+    # export API_PASSWORD=ku84T4a7p
+    worker = Worker()
     
     class MinhaAutomacao(Worker):
         def main(self):
@@ -48,11 +68,13 @@ Exemplo de uso:
 import os
 import sys
 import json
+import importlib.util
 import traceback
 from datetime import datetime
 from typing import Dict, Any, Optional
 from enum import Enum
 import requests
+from requests.auth import HTTPBasicAuth
 
 
 class AutomationStatus(Enum):
@@ -97,7 +119,7 @@ class Worker:
     """Classe base para automações integradas ao N8N."""
     
     def __init__(self, n8n_webhook_url=None, worker_id=None, task_id=None, automation_id=None, 
-                 parameters=None, api_timeout=None, bot_version=None):
+                 parameters=None, api_timeout=None, bot_version=None, api_user=None, api_password=None):
         """
         Inicializa o worker com configurações do ambiente ou parâmetros manuais.
         
@@ -109,6 +131,8 @@ class Worker:
             parameters: Dicionário de parâmetros (opcional, usa env se não fornecido)
             api_timeout: Timeout para APIs (opcional, usa env se não fornecido)
             bot_version: Versão do bot (opcional, usa env se não fornecido)
+            api_user: Usuário para basic auth N8N (opcional, usa env se não fornecido)
+            api_password: Senha para basic auth N8N (opcional, usa env se não fornecido)
         """
         
         # URLs dos webhooks N8N
@@ -120,6 +144,11 @@ class Worker:
         # Configurações de timeout e bot version
         self.api_timeout = api_timeout or int(os.getenv('API_TIMEOUT', '30'))
         self.bot_version = bot_version or os.getenv('BOT_VERSION', 'main')
+        
+        # Configurações de Basic Auth para N8N
+        self.api_user = api_user or os.getenv('API_USER', 'worker')
+        self.api_password = api_password or os.getenv('API_PASSWORD', 'ku84T4a7p')
+        self.auth = HTTPBasicAuth(self.api_user, self.api_password)
         
         # Task ID e Automation ID (podem não existir no modo desenvolvimento)
         env_task_id = os.getenv('TASK_ID')
@@ -209,6 +238,7 @@ class Worker:
             requests.post(
                 f"{self.n8n_webhook_base}/webhook/tarefa/logs",
                 json=log_data,
+                auth=self.auth,
                 timeout=self.api_timeout
             )
             
@@ -237,6 +267,7 @@ class Worker:
             response = requests.post(
                 f"{self.n8n_webhook_base}/webhook/tarefa/kpi",
                 json=kpi_data,
+                auth=self.auth,
                 timeout=self.api_timeout
             )
             
@@ -295,11 +326,12 @@ class Worker:
                 update_data["error_message"] = message
             else:
                 update_data["result_message"] = message
-            
+
             # 1. Tenta enviar para N8N primeiro
             response = requests.patch(
                 f"{self.n8n_webhook_base}/webhook/tarefa/status",
                 json=update_data,
+                auth=self.auth,
                 timeout=self.api_timeout
             )
             
